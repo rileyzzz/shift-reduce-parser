@@ -8,13 +8,14 @@ class ParseContext {
 
 let context = null;
 
-function initParseTable(ptable) {
-    context = new ParseContext(ptable);
+function initParseTable(table) {
+    context = new ParseContext(table);
     displayParseTable(table);
 }
 
 function displayParseTable(table) {
     let tableDiv = $(".table");
+    tableDiv.empty();
     
 }
 

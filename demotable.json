@@ -1,4 +1,7 @@
 {
+    "name": "Demo Table",
+    "tokens": [ "id", "+", "*", "(", ")", "$" ],
+    "rules": [ "E", "T", "F" ],
     "states": [
         {
             "actions": { "id": "S5", "(": "S4" },
