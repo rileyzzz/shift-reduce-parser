@@ -10,7 +10,7 @@ class ParseContext {
         this.pushState(0);
         
 
-        this.ast = {};
+        this.ast = [];
     }
 
     pushState(state) {
@@ -53,9 +53,16 @@ class ParseContext {
             throw new Error('ParseContext.shift: No tokens left to shift!');
         
         // grab the next token
-        this.pushToken(this.tokens.shift());
+        const nextToken = this.tokens.shift();
+        this.pushToken(nextToken);
         // and set our new state
         this.pushState(newState);
+
+        // add to the AST
+        this.ast.push({
+            "name": nextToken,
+            "children": []
+        });
     }
 
     * reduce(rule) {
@@ -66,6 +73,7 @@ class ParseContext {
 
         // reduce using production rule "rule"
         const matchRule = this.table.rules[rule];
+        let astChildren = [];
         
         for (let i = matchRule.length - 1; i >= 0; i--) {
             // ignore state suffix
@@ -74,10 +82,18 @@ class ParseContext {
             let check = this.pop();
             if (check["type"] != "token" && check["type"] != "rule")
                 throw new Error(`ParseContext:reduce: Unexpected stack element ${check}`);
-            
+
             if (check["data"] != matchRule[i])
                 throw new Error(`ParseContext:reduce: Failed to match '${check["data"]}' for production rule ${(rule + 1)}! (Expected '${matchRule[i]}')`);
+            
+            // grab the items off the end of the ast
+            astChildren.push(this.ast.pop());
         }
+        
+        this.ast.push({
+            "name": matchRule["result"],
+            "children": astChildren
+        });
 
         // if we got through the loop without errors, we successfully matched
         yield;
@@ -124,6 +140,13 @@ class ParseContext {
         const nextAction = actions[nextToken];
         if (nextAction == "accept") {
             // we're done here
+
+            // bundle up the AST
+            this.ast = [{
+                "name": "",
+                "children": this.ast
+            }];
+            
             return true;
         }
         else if (nextAction.charAt(0) == 'S') {
