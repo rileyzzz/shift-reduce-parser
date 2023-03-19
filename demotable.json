@@ -1,7 +1,33 @@
 {
     "name": "Demo Table",
-    "tokens": [ "id", "+", "*", "(", ")", "$" ],
-    "rules": [ "E", "T", "F" ],
+    "terminals": [ "id", "+", "*", "(", ")", "$" ],
+    "nonterminals": [ "E", "T", "F" ],
+    "rules": [
+        {
+            "match": [ "E", "+", "T" ],
+            "result": "E"
+        },
+        {
+            "match": [ "T" ],
+            "result": "E"
+        },
+        {
+            "match": [ "T", "*", "F" ],
+            "result": "T"
+        },
+        {
+            "match": [ "F" ],
+            "result": "T"
+        },
+        {
+            "match": [ "(", "E", ")" ],
+            "result": "F"
+        },
+        {
+            "match": [ "id" ],
+            "result": "F"
+        }
+    ],
     "states": [
         {
             "actions": { "id": "S5", "(": "S4" },

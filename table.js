@@ -1,4 +1,11 @@
 
+class ParserRule {
+    constructor(matches, result) {
+        this.matches = matches;
+        this.result = result;
+    }
+}
+
 class ParserState {
     constructor(actions, goto) {
         // dictionary mapping symbols to actions
@@ -9,7 +16,9 @@ class ParserState {
 }
 
 class ParserTable {
-    constructor(states) {
+    constructor(rules, states) {
+        // list of parser rules
+        this.rules = rules;
         // list of parser states
         this.states = states;
     }
