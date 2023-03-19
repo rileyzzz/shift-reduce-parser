@@ -14,21 +14,21 @@ class ParseContext {
     }
 
     pushState(state) {
-        this.stack.append({
+        this.stack.push({
             "type": "state",
             "data": state
         });
     }
 
     pushToken(token) {
-        this.stack.append({
+        this.stack.push({
             "type": "token",
             "data": token
         });
     }
 
     pushRule(rule) {
-        this.stack.append({
+        this.stack.push({
             "type": "rule",
             "data": rule
         });
@@ -138,6 +138,7 @@ class ParseContext {
             throw new Error(`ParseContext:run: Unknown action '${nextAction}'!`);
         }
 
+        // yield after each instruction so it's easy to step through
         yield;
     }
 }
