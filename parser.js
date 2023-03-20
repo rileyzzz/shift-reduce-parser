@@ -181,19 +181,23 @@ class ParseContext {
             const state = this.peek();
             if (state["type"] != "state")
                 throw new Error(`ParseContext:run: expected state index in stack, found ${state}`);
-            
+
             // states are already 0 indexed
             const stateIndex = state["data"];
             if (stateIndex < 0 || stateIndex >= this.table.states.length)
                 throw new Error(`ParseContext:run: unexpected state index ${stateIndex}`);
             
+            // TODO: highlight state in stack and yield
+            // TODO: highlight state row and yield
+
             // pull the appropriate action for this state
             const nextToken = this.tokens[0]["value"];
             this.tokens[0]["highlight"] = 1;
-
+            // TODO: highlight token header
+            
             let actionElements = this.table.states[stateIndex].actionElements;
             clearHighlight();
-            
+
             // yield to show token
             yield;
             if (nextToken in actionElements) highlightElement(actionElements[nextToken]);
