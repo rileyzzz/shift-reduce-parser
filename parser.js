@@ -48,6 +48,7 @@ class ParseContext {
     pushState(state) {
         this.stack.push({
             type: "state",
+            highlight: 0,
             data: state
         });
     }
@@ -55,6 +56,7 @@ class ParseContext {
     pushToken(token) {
         this.stack.push({
             type: "token",
+            highlight: 0,
             data: token
         });
     }
@@ -62,6 +64,7 @@ class ParseContext {
     pushRule(rule) {
         this.stack.push({
             type: "rule",
+            highlight: 0,
             data: rule
         });
     }
@@ -322,6 +325,21 @@ function doneHighlight() {
     $(".parser-table").addClass("table-complete");
 }
 
+function updateStackList() {
+    let list = $(".stack-list");
+    list.empty();
+
+    let allItems = [];
+    for (const item of context.stack) {
+        let itemClass = item["highlight"] == 2 ? "stack-item stack-item-highlight-yellow" : (item["highlight"] == 1 ? "stack-item stack-item-highlight" : "stack-item");
+        let element = $(`<span class="${itemClass}">${item["data"]}</span>`);
+        list.append(element);
+        allItems.push(element);
+    }
+
+    context.stackElements = allItems;
+}
+
 function updateTokensList() {
     let list = $(".tokens-list");
     list.empty();
@@ -407,6 +425,7 @@ $("#run-btn").click(function () {
     $(".stack-container").removeClass("disabled");
     $(".tokens-container").removeClass("disabled");
     $(".stack-textbox").val(context.getStack());
+    updateStackList();
     updateTokensList();
 });
 
@@ -423,6 +442,7 @@ $("#next-btn").click(function () {
 
     // update stack display
     $(".stack-textbox").val(context.getStack());
+    updateStackList();
     updateTokensList();
 });
 
@@ -458,6 +478,7 @@ $("#prev-btn").click(function () {
     
     // update stack display
     $(".stack-textbox").val(context.getStack());
+    updateStackList();
     updateTokensList();
 });
 
