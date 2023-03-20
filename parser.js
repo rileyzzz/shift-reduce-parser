@@ -15,22 +15,22 @@ class ParseContext {
 
     pushState(state) {
         this.stack.push({
-            "type": "state",
-            "data": state
+            type: "state",
+            data: state
         });
     }
 
     pushToken(token) {
         this.stack.push({
-            "type": "token",
-            "data": token
+            type: "token",
+            data: token
         });
     }
 
     pushRule(rule) {
         this.stack.push({
-            "type": "rule",
-            "data": rule
+            type: "rule",
+            data: rule
         });
     }
 
@@ -48,10 +48,19 @@ class ParseContext {
         return this.stack.pop();
     }
 
-    shift(newState) {
+    getStack() {
+        let str = "";
+        for (const val of this.stack)
+            str += val["data"];
+        return str;
+    }
+
+    * shift(newState) {
         if (this.tokens.length == 0)
             throw new Error('ParseContext.shift: No tokens left to shift!');
         
+        yield;
+
         // grab the next token
         const nextToken = this.tokens.shift();
         this.pushToken(nextToken);
@@ -71,11 +80,14 @@ class ParseContext {
         if (rule < 0 || rule >= this.table.rules.length)
             throw new Error(`ParseContext:reduce: Invalid rule index ${(rule + 1)}!`);
 
+        yield;
+
         // reduce using production rule "rule"
         const matchRule = this.table.rules[rule];
+        const matchTokens = matchRule.matches;
         let astChildren = [];
         
-        for (let i = matchRule.length - 1; i >= 0; i--) {
+        for (let i = matchTokens.length - 1; i >= 0; i--) {
             // ignore state suffix
             this.pop();
             
@@ -83,15 +95,15 @@ class ParseContext {
             if (check["type"] != "token" && check["type"] != "rule")
                 throw new Error(`ParseContext:reduce: Unexpected stack element ${check}`);
 
-            if (check["data"] != matchRule[i])
-                throw new Error(`ParseContext:reduce: Failed to match '${check["data"]}' for production rule ${(rule + 1)}! (Expected '${matchRule[i]}')`);
+            if (check["data"] != matchTokens[i])
+                throw new Error(`ParseContext:reduce: Failed to match '${check["data"]}' for production rule ${(rule + 1)}! (Expected '${matchTokens[i]}')`);
             
             // grab the items off the end of the ast
             astChildren.push(this.ast.pop());
         }
         
         this.ast.push({
-            "name": matchRule["result"],
+            "name": matchRule.result,
             "children": astChildren
         });
 
@@ -105,7 +117,7 @@ class ParseContext {
             throw new Error(`ParseContext:reduce: expected state index in stack, found ${state}`);
         
         // push the next rule
-        const result = matchRule["result"];
+        const result = matchRule.result;
         this.pushRule(result);
 
         // now find out what to do! (rhyme x4)
@@ -125,54 +137,59 @@ class ParseContext {
     }
 
     * run() {
-        const state = this.peek();
-        if (state["type"] != "state")
-            throw new Error(`ParseContext:run: expected state index in stack, found ${state}`);
-        
-        // states are already 0 indexed
-        const stateIndex = state["data"];
-        if (stateIndex < 0 || stateIndex >= this.table.states.length)
-            throw new Error(`ParseContext:run: unexpected state index ${stateIndex}`);
-        
-        // pull the appropriate action for this state
         if (this.tokens == null || this.tokens.length == 0)
-            throw new Error("ParseContext:run: no tokens left!!!");
-        const nextToken = this.tokens[0];
+            throw new Error("ParseContext:run: no tokens to parse!!!");
         
-        let actionElements = this.table.states[stateIndex].actionElements;
-        clearHighlight();
-        if (nextToken in actionElements) highlightElement(actionElements[nextToken]);
+        while (this.tokens != null && this.tokens.length > 0) {
+            const state = this.peek();
+            if (state["type"] != "state")
+                throw new Error(`ParseContext:run: expected state index in stack, found ${state}`);
+            
+            // states are already 0 indexed
+            const stateIndex = state["data"];
+            if (stateIndex < 0 || stateIndex >= this.table.states.length)
+                throw new Error(`ParseContext:run: unexpected state index ${stateIndex}`);
+            
+            // pull the appropriate action for this state
+            const nextToken = this.tokens[0];
+            
+            let actionElements = this.table.states[stateIndex].actionElements;
+            clearHighlight();
+            if (nextToken in actionElements) highlightElement(actionElements[nextToken]);
+            
+            const actions = this.table.states[stateIndex].actions;
+            if (!(nextToken in actions))
+                throw new Error(`ParseContext:run: Failed to resolve action for token '${nextToken}' at state ${stateIndex}! (Expected one of ${Object.keys(actions)})`);
+            const nextAction = actions[nextToken];
+    
+            if (nextAction == "accept") {
+                // we're done here
+                doneHighlight();
+    
+                // bundle up the AST
+                this.ast = [{
+                    "name": "",
+                    "children": this.ast
+                }];
+                break;
+            }
+            else if (nextAction.charAt(0) == 'S') {
+                let shiftState = parseInt(nextAction.substring(1));
+                yield* this.shift(shiftState);
+            }
+            else if (nextAction.charAt(0) == 'R') {
+                let reduceRule = parseInt(nextAction.substring(1));
+                yield* this.reduce(reduceRule);
+            }
+            else {
+                throw new Error(`ParseContext:run: Unknown action '${nextAction}'!`);
+            }
+    
+            // yield after each instruction so it's easy to step through
+            yield;
+        }
         
-        const actions = this.table.states[stateIndex].actions;
-        if (!(nextToken in actions))
-            throw new Error(`ParseContext:run: Failed to resolve action for token '${nextToken}' at state ${stateIndex}! (Expected one of ${Object.keys(actions)})`);
-        const nextAction = actions[nextToken];
-
-        if (nextAction == "accept") {
-            // we're done here
-            doneHighlight();
-
-            // bundle up the AST
-            this.ast = [{
-                "name": "",
-                "children": this.ast
-            }];
-            return true;
-        }
-        else if (nextAction.charAt(0) == 'S') {
-            let shiftState = parseInt(nextAction.substring(1));
-            this.shift(shiftState);
-        }
-        else if (nextAction.charAt(0) == 'R') {
-            let reduceRule = parseInt(nextAction.substring(1));
-            yield* this.reduce(reduceRule);
-        }
-        else {
-            throw new Error(`ParseContext:run: Unknown action '${nextAction}'!`);
-        }
-
-        // yield after each instruction so it's easy to step through
-        yield;
+        return true;
     }
 }
 
@@ -265,7 +282,7 @@ function importJSONTable(json) {
     let tableRules = [];
     for (let ruleIndex = 0; ruleIndex < rules.length; ruleIndex++) {
         const rule = rules[ruleIndex];
-        let ruleObj = new ParserState(rule["match"], rule["result"]);
+        let ruleObj = new ParserRule(rule["match"], rule["result"]);
         tableRules.push(ruleObj);
     }
 
@@ -284,9 +301,9 @@ let table = null;
 let running = false;
 let context = null;
 
-function initParseTable(table) {
-    table = table;
-    displayParseTable(table);
+function initParseTable(ptable) {
+    table = ptable;
+    displayParseTable(ptable);
 }
 
 // interface logic
@@ -295,12 +312,19 @@ let parse_routine = null;
 $("#run-btn").click(function () {
     if (running || table == null)
         return;
+    
+    let textInput = $("#text-input");
+    textInput.prop('readonly', true);
+    let tokens = splitTokens(table, textInput.val());
+    console.log(`tokens: ${tokens}`);
+
     running = true;
-    context = new ParseContext(table);
+    context = new ParseContext(table, tokens);
     parse_routine = context.run();
 
     $(".idle-controls").addClass("disabled");
     $(".running-controls").removeClass("disabled");
+    $(".stack-textbox").val(context.getStack());
 });
 
 $("#next-btn").click(function () {
@@ -308,6 +332,9 @@ $("#next-btn").click(function () {
         return;
 
     parse_routine.next();
+
+    // update stack display
+    $(".stack-textbox").val(context.getStack());
 });
 
 $("#stop-btn").click(function () {
@@ -317,7 +344,11 @@ $("#stop-btn").click(function () {
     parse_routine = null;
     context = null;
 
+    let textInput = $("#text-input");
+    textInput.prop('readonly', false);
+
     $(".running-controls").addClass("disabled");
     $(".idle-controls").removeClass("disabled");
+    $(".stack-textbox").val("");
 });
 
