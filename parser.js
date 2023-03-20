@@ -112,7 +112,11 @@ class ParseContext {
         const stateIndex = state["data"];
         if (stateIndex < 0 || stateIndex >= this.table.states.length)
             throw new Error(`ParseContext:reduce: unexpected state index ${stateIndex}`);
-        
+
+        let gotoElements = this.table.states[stateIndex].gotoElements;
+        // don't bother highlighting if result is completely wack
+        if (result in gotoElements) highlightElement(gotoElements[result]);
+    
         const goto = this.table.states[stateIndex].goto;
         if (!(result in goto))
             throw new Error(`ParseContext:reduce: Failed to resolve goto for rule '${result}' at state ${stateIndex}! (Expected one of ${Object.keys(goto)})`);
@@ -131,23 +135,28 @@ class ParseContext {
             throw new Error(`ParseContext:run: unexpected state index ${stateIndex}`);
         
         // pull the appropriate action for this state
-        if (this.tokens.length == 0)
+        if (this.tokens == null || this.tokens.length == 0)
             throw new Error("ParseContext:run: no tokens left!!!");
         const nextToken = this.tokens[0];
-
+        
+        let actionElements = this.table.states[stateIndex].actionElements;
+        clearHighlight();
+        if (nextToken in actionElements) highlightElement(actionElements[nextToken]);
+        
         const actions = this.table.states[stateIndex].actions;
         if (!(nextToken in actions))
             throw new Error(`ParseContext:run: Failed to resolve action for token '${nextToken}' at state ${stateIndex}! (Expected one of ${Object.keys(actions)})`);
         const nextAction = actions[nextToken];
+
         if (nextAction == "accept") {
             // we're done here
+            doneHighlight();
 
             // bundle up the AST
             this.ast = [{
                 "name": "",
                 "children": this.ast
             }];
-            
             return true;
         }
         else if (nextAction.charAt(0) == 'S') {
@@ -167,13 +176,6 @@ class ParseContext {
     }
 }
 
-let context = null;
-
-function initParseTable(table) {
-    context = new ParseContext(table);
-    displayParseTable(table);
-}
-
 function displayParseTable(table) {
     let tableDiv = $(".parser-table");
     tableDiv.empty();
@@ -184,6 +186,7 @@ function displayParseTable(table) {
     let header = $("<tr></tr>");
     header.append("<th></th>");
     header.append(`<th class="parser-primary" colspan=${table.terminals.length}>Action</th>`);
+    header.append(`<th class="parser-spacer"></th>`); // spacer
     header.append(`<th class="parser-primary" colspan=${table.nonterminals.length}>Goto</th>`);
     tableDiv.append(header);
 
@@ -192,14 +195,15 @@ function displayParseTable(table) {
     subheader.append(`<td class="parser-primary">State</td>`);
     for (const terminal of table.terminals)
         subheader.append(`<td class="parser-secondary">${terminal}</td>`);
+    subheader.append(`<td class="parser-spacer"></td>`); // spacer
     for (const nonterminal of table.nonterminals)
         subheader.append(`<td class="parser-secondary">${nonterminal}</td>`);
     tableDiv.append(subheader);
 
     for (let stateIndex = 0; stateIndex < table.states.length; stateIndex++) {
         let state = table.states[stateIndex];
-        state.actionElements = [];
-        state.gotoElements = [];
+        state.actionElements = {};
+        state.gotoElements = {};
 
         let row = $("<tr></tr>");
 
@@ -213,10 +217,11 @@ function displayParseTable(table) {
                 element = $(`<td class="parser-secondary"></td>`);
             
             row.append(element);
-            state.actionElements.push(element);
+            state.actionElements[terminal] = element;
             table.elements.push(element);
         }
 
+        row.append(`<td class="parser-spacer"></td>`); // spacer
         for (const nonterminal of table.nonterminals) {
             let element = null;
             if (nonterminal in state.goto)
@@ -225,7 +230,7 @@ function displayParseTable(table) {
                 element = $(`<td class="parser-secondary"></td>`);
             
             row.append(element);
-            state.gotoElements.push(element);
+            state.gotoElements[nonterminal] = element;
             table.elements.push(element);
         }
 
@@ -233,9 +238,22 @@ function displayParseTable(table) {
     }
 }
 
-function highlightElement(element) {
+function clearHighlight() {
     // clear old highlights
+    $(".table-complete").removeClass("table-complete");
+    $(".parser-highlight").removeClass("parser-highlight");
+    $(".parser-highlight-invalid").removeClass("parser-highlight-invalid");
+}
 
+function highlightElement(element) {
+    if (element.text() != "")
+        element.addClass("parser-highlight");
+    else
+        element.addClass("parser-highlight-invalid");
+}
+
+function doneHighlight() {
+    $(".parser-table").addClass("table-complete");
 }
 
 function importJSONTable(json) {
@@ -260,3 +278,46 @@ function importJSONTable(json) {
 
     return new ParserTable(terminals, nonterminals, tableRules, tableStates);
 }
+
+
+let table = null;
+let running = false;
+let context = null;
+
+function initParseTable(table) {
+    table = table;
+    displayParseTable(table);
+}
+
+// interface logic
+let parse_routine = null;
+
+$("#run-btn").click(function () {
+    if (running || table == null)
+        return;
+    running = true;
+    context = new ParseContext(table);
+    parse_routine = context.run();
+
+    $(".idle-controls").addClass("disabled");
+    $(".running-controls").removeClass("disabled");
+});
+
+$("#next-btn").click(function () {
+    if (!running || parse_routine == null)
+        return;
+
+    parse_routine.next();
+});
+
+$("#stop-btn").click(function () {
+    if (!running)
+        return;
+    running = false;
+    parse_routine = null;
+    context = null;
+
+    $(".running-controls").addClass("disabled");
+    $(".idle-controls").removeClass("disabled");
+});
+

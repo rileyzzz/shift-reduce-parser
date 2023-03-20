@@ -25,31 +25,37 @@
         </div>
         <div class="subheader mb-2">
             <div class="running-controls disabled">
-                <button type="button" class="btn btn-secondary">Previous</button>
-                <button type="button" class="btn btn-primary">Next</button>
-                <button type="button" class="btn btn-danger">Stop</button>
+                <button type="button" class="btn btn-secondary" id="prev-btn">Previous</button>
+                <button type="button" class="btn btn-primary" id="next-btn">Next</button>
+                <button type="button" class="btn btn-danger" id="stop-btn">Stop</button>
             </div>
             <div class="idle-controls">
-                <button type="button" class="btn btn-success">Run</button>
+                <button type="button" class="btn btn-success" id="run-btn">Run</button>
             </div>
         </div>
     </div>
 
     <div class="container main-content">
         <div class="sidebar">
-            <div class="input-container">
-                <h2 class="mb-2">Input</h2>
-                <textarea class="input-box" name="text-input" cols="40" rows="5"></textarea>
-            </div>
             <div class="grammar-container">
                 <h2 class="mb-2">Grammar</h2>
+                <textarea class="input-box" id="grammar-input" cols="40" rows="5"></textarea>
+            </div>
+            <div class="input-container">
+                <h2 class="mb-2">Input</h2>
+                <textarea class="input-box" id="text-input" cols="40" rows="5"></textarea>
             </div>
         </div>
         <div class="table-container">
+            <div class="stack-container mb-3">
+                <span class="stack-label">Stack:</span>
+                <input type="text" class="stack-textbox" value="01234" readonly="readonly">
+            </div>
             <table class="parser-table table-dark"></table>
         </div>
     </div>
     <script src="./table.js"></script>
+    <script src="./tokenizer.js"></script>
     <script src="./parser.js"></script>
     <script src="./demotable.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>

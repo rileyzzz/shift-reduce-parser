@@ -10,11 +10,11 @@ class ParserState {
     constructor(actions, goto) {
         // dictionary mapping symbols to actions
         this.actions = actions;
-        this.actionElements = [];
+        this.actionElements = {};
 
         // dictionary matching rules to states
         this.goto = goto;
-        this.gotoElements = [];
+        this.gotoElements = {};
     }
 }
 
