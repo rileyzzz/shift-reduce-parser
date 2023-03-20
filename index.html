@@ -37,19 +37,24 @@
 
     <div class="container main-content">
         <div class="sidebar">
-            <div class="grammar-container">
+            <div class="grammar-container mb-3">
                 <h2 class="mb-2">Grammar</h2>
-                <textarea class="input-box" id="grammar-input" cols="40" rows="5"></textarea>
+                <textarea class="input-box mb-2" id="grammar-input" cols="40" rows="5"></textarea>
+                <button type="button" class="btn btn-primary">Generate Table</button>
             </div>
             <div class="input-container">
                 <h2 class="mb-2">Input</h2>
-                <textarea class="input-box" id="text-input" cols="40" rows="5"></textarea>
+                <textarea class="input-box" id="text-input" cols="40" rows="5">id + id * id$</textarea>
             </div>
         </div>
         <div class="table-container">
-            <div class="stack-container mb-3">
+            <div class="stack-container mb-3 disabled">
                 <span class="stack-label">Stack:</span>
                 <input type="text" class="stack-textbox" value="" readonly="readonly">
+            </div>
+            <div class="tokens-container mb-3 disabled">
+                <span class="stack-label">Tokens:</span>
+                <div class="tokens-list"></div>
             </div>
             <table class="parser-table table-dark"></table>
         </div>

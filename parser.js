@@ -3,7 +3,15 @@
 class ParseContext {
     constructor(table, tokens) {
         this.table = table;
-        this.tokens = tokens;
+
+        // add metadata per token
+        this.tokens = [];
+        for (const tok of tokens) {
+            this.tokens.push({
+                value: tok,
+                highlight: false
+            });
+        }
 
         this.stack = [];
         // always start with state 0
@@ -13,12 +21,15 @@ class ParseContext {
         this.ast = [];
         this.idle = true;
         this.finished = false;
+
+        
     }
 
     getData() {
         return {
             table: this.table,
-            tokens: this.tokens.slice(),
+            // deep copy the tokens
+            tokens: JSON.parse(JSON.stringify(this.tokens.slice())),
             stack: this.stack.slice(),
             // deep copy the AST
             ast: JSON.parse(JSON.stringify(this.ast)),
@@ -80,17 +91,18 @@ class ParseContext {
         if (this.tokens.length == 0)
             throw new Error('ParseContext.shift: No tokens left to shift!');
         
+        this.tokens[0]["highlight"] = true;
         yield;
 
         // grab the next token
         const nextToken = this.tokens.shift();
-        this.pushToken(nextToken);
+        this.pushToken(nextToken["value"]);
         // and set our new state
         this.pushState(newState);
 
         // add to the AST
         this.ast.push({
-            "name": nextToken,
+            "name": nextToken["value"],
             "children": []
         });
     }
@@ -101,6 +113,7 @@ class ParseContext {
         if (rule < 0 || rule >= this.table.rules.length)
             throw new Error(`ParseContext:reduce: Invalid rule index ${(rule + 1)}!`);
 
+        // highlight the production rule
         yield;
 
         // reduce using production rule "rule"
@@ -152,7 +165,7 @@ class ParseContext {
     
         const goto = this.table.states[stateIndex].goto;
         if (!(result in goto))
-            throw new Error(`ParseContext:reduce: Failed to resolve goto for rule '${result}' at state ${stateIndex}! (Expected one of ${Object.keys(goto)})`);
+            throw new Error(`ParseContext:reduce: Failed to resolve goto for rule '${result}' at state ${stateIndex}! (Expected one of [ ${Object.keys(goto)} ])`);
         const newState = goto[result];
         this.pushState(newState);
     }
@@ -174,7 +187,7 @@ class ParseContext {
                 throw new Error(`ParseContext:run: unexpected state index ${stateIndex}`);
             
             // pull the appropriate action for this state
-            const nextToken = this.tokens[0];
+            const nextToken = this.tokens[0]["value"];
             
             let actionElements = this.table.states[stateIndex].actionElements;
             clearHighlight();
@@ -182,7 +195,7 @@ class ParseContext {
             
             const actions = this.table.states[stateIndex].actions;
             if (!(nextToken in actions))
-                throw new Error(`ParseContext:run: Failed to resolve action for token '${nextToken}' at state ${stateIndex}! (Expected one of ${Object.keys(actions)})`);
+                throw new Error(`ParseContext:run: Failed to resolve action for token '${nextToken}' at state ${stateIndex}! (Expected one of [ ${Object.keys(actions)} ])`);
             const nextAction = actions[nextToken];
     
             if (nextAction == "accept") {
@@ -300,6 +313,21 @@ function doneHighlight() {
     $(".parser-table").addClass("table-complete");
 }
 
+function updateTokensList() {
+    let list = $(".tokens-list");
+    list.empty();
+
+    let allTokens = [];
+    for (const token of context.tokens) {
+        let tokenClass = token["highlight"] ? "token token-highlight" : "token";
+        let element = $(`<span class="${tokenClass}">${token["value"]}</span>`);
+        list.append(element);
+        allTokens.push(element);
+    }
+
+    context.tokenElements = allTokens;
+}
+
 function importJSONTable(json) {
     const terminals = json["terminals"];
     const nonterminals = json["nonterminals"];
@@ -367,7 +395,10 @@ $("#run-btn").click(function () {
 
     $(".idle-controls").addClass("disabled");
     $(".running-controls").removeClass("disabled");
+    $(".stack-container").removeClass("disabled");
+    $(".tokens-container").removeClass("disabled");
     $(".stack-textbox").val(context.getStack());
+    updateTokensList();
 });
 
 $("#next-btn").click(function () {
@@ -383,6 +414,7 @@ $("#next-btn").click(function () {
 
     // update stack display
     $(".stack-textbox").val(context.getStack());
+    updateTokensList();
 });
 
 $("#prev-btn").click(function () {
@@ -414,6 +446,7 @@ $("#prev-btn").click(function () {
     
     // update stack display
     $(".stack-textbox").val(context.getStack());
+    updateTokensList();
 });
 
 $("#stop-btn").click(function () {
@@ -428,6 +461,9 @@ $("#stop-btn").click(function () {
 
     $(".running-controls").addClass("disabled");
     $(".idle-controls").removeClass("disabled");
+    $(".stack-container").addClass("disabled");
+    $(".tokens-container").addClass("disabled");
     $(".stack-textbox").val("");
+    clearHighlight();
 });
 
