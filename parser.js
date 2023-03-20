@@ -12,6 +12,7 @@ class ParseContext {
 
         this.ast = [];
         this.idle = true;
+        this.finished = false;
     }
 
     getData() {
@@ -20,7 +21,8 @@ class ParseContext {
             tokens: this.tokens.slice(),
             stack: this.stack.slice(),
             // deep copy the AST
-            ast: JSON.parse(JSON.stringify(this.ast))
+            ast: JSON.parse(JSON.stringify(this.ast)),
+            finished: this.finished
         };
     }
 
@@ -29,6 +31,7 @@ class ParseContext {
         this.tokens = data["tokens"];
         this.stack = data["stack"];
         this.ast = data["ast"];
+        this.finished = data["finished"];
     }
 
     pushState(state) {
@@ -191,7 +194,10 @@ class ParseContext {
                     "name": "",
                     "children": this.ast
                 }];
-                break;
+                // break;
+                // yield, so we can still step back through with the previous button
+                this.finished = true;
+                yield;
             }
             else if (nextAction.charAt(0) == 'S') {
                 let shiftState = parseInt(nextAction.substring(1));
@@ -365,7 +371,7 @@ $("#run-btn").click(function () {
 });
 
 $("#next-btn").click(function () {
-    if (!running || parse_routine == null)
+    if (!running || parse_routine == null || context.finished)
         return;
     
     if (context.idle) {
