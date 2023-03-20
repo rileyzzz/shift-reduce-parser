@@ -109,13 +109,13 @@ class ParseContext {
         this.pushRule(result);
 
         // now find out what to do! (rhyme x4)
-        const stateIndex = state["data"] - 1;
+        const stateIndex = state["data"];
         if (stateIndex < 0 || stateIndex >= this.table.states.length)
-            throw new Error(`ParseContext:reduce: unexpected state index ${(stateIndex + 1)}`);
+            throw new Error(`ParseContext:reduce: unexpected state index ${stateIndex}`);
         
         const goto = this.table.states[stateIndex].goto;
         if (!(result in goto))
-            throw new Error(`ParseContext:reduce: Failed to resolve goto for rule '${result}' at state ${(stateIndex + 1)}! (Expected one of ${Object.keys(goto)})`);
+            throw new Error(`ParseContext:reduce: Failed to resolve goto for rule '${result}' at state ${stateIndex}! (Expected one of ${Object.keys(goto)})`);
         const newState = goto[result];
         this.pushState(newState);
     }
@@ -125,9 +125,10 @@ class ParseContext {
         if (state["type"] != "state")
             throw new Error(`ParseContext:run: expected state index in stack, found ${state}`);
         
-        const stateIndex = state["data"] - 1;
+        // states are already 0 indexed
+        const stateIndex = state["data"];
         if (stateIndex < 0 || stateIndex >= this.table.states.length)
-            throw new Error(`ParseContext:run: unexpected state index ${(stateIndex + 1)}`);
+            throw new Error(`ParseContext:run: unexpected state index ${stateIndex}`);
         
         // pull the appropriate action for this state
         if (this.tokens.length == 0)
@@ -136,7 +137,7 @@ class ParseContext {
 
         const actions = this.table.states[stateIndex].actions;
         if (!(nextToken in actions))
-            throw new Error(`ParseContext:run: Failed to resolve action for token '${nextToken}' at state ${(stateIndex + 1)}! (Expected one of ${Object.keys(actions)})`);
+            throw new Error(`ParseContext:run: Failed to resolve action for token '${nextToken}' at state ${stateIndex}! (Expected one of ${Object.keys(actions)})`);
         const nextAction = actions[nextToken];
         if (nextAction == "accept") {
             // we're done here
@@ -174,12 +175,72 @@ function initParseTable(table) {
 }
 
 function displayParseTable(table) {
-    let tableDiv = $(".table");
+    let tableDiv = $(".parser-table");
     tableDiv.empty();
+
+    table.elements = [];
+
+    // groups
+    let header = $("<tr></tr>");
+    header.append("<th></th>");
+    header.append(`<th class="parser-primary" colspan=${table.terminals.length}>Action</th>`);
+    header.append(`<th class="parser-primary" colspan=${table.nonterminals.length}>Goto</th>`);
+    tableDiv.append(header);
+
+    // labels
+    let subheader = $("<tr></tr>");
+    subheader.append(`<td class="parser-primary">State</td>`);
+    for (const terminal of table.terminals)
+        subheader.append(`<td class="parser-secondary">${terminal}</td>`);
+    for (const nonterminal of table.nonterminals)
+        subheader.append(`<td class="parser-secondary">${nonterminal}</td>`);
+    tableDiv.append(subheader);
+
+    for (let stateIndex = 0; stateIndex < table.states.length; stateIndex++) {
+        let state = table.states[stateIndex];
+        state.actionElements = [];
+        state.gotoElements = [];
+
+        let row = $("<tr></tr>");
+
+        row.append(`<td class="parser-primary">${stateIndex}</td>`);
+
+        for (const terminal of table.terminals) {
+            let element = null;
+            if (terminal in state.actions)
+                element = $(`<td class="parser-secondary">${state.actions[terminal]}</td>`);
+            else
+                element = $(`<td class="parser-secondary"></td>`);
+            
+            row.append(element);
+            state.actionElements.push(element);
+            table.elements.push(element);
+        }
+
+        for (const nonterminal of table.nonterminals) {
+            let element = null;
+            if (nonterminal in state.goto)
+                element = $(`<td class="parser-secondary">${state.goto[nonterminal]}</td>`);
+            else
+                element = $(`<td class="parser-secondary"></td>`);
+            
+            row.append(element);
+            state.gotoElements.push(element);
+            table.elements.push(element);
+        }
+
+        tableDiv.append(row);
+    }
+}
+
+function highlightElement(element) {
+    // clear old highlights
 
 }
 
 function importJSONTable(json) {
+    const terminals = json["terminals"];
+    const nonterminals = json["nonterminals"];
     const rules = json["rules"];
     const states = json["states"];
 
@@ -197,5 +258,5 @@ function importJSONTable(json) {
         tableStates.push(stateObj);
     }
 
-    return new ParserTable(tableRules, tableStates);
+    return new ParserTable(terminals, nonterminals, tableRules, tableStates);
 }
