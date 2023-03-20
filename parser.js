@@ -11,6 +11,24 @@ class ParseContext {
         
 
         this.ast = [];
+        this.idle = true;
+    }
+
+    getData() {
+        return {
+            table: this.table,
+            tokens: this.tokens.slice(),
+            stack: this.stack.slice(),
+            // deep copy the AST
+            ast: JSON.parse(JSON.stringify(this.ast))
+        };
+    }
+
+    setData(data) {
+        this.table = data["table"];
+        this.tokens = data["tokens"];
+        this.stack = data["stack"];
+        this.ast = data["ast"];
     }
 
     pushState(state) {
@@ -141,6 +159,8 @@ class ParseContext {
             throw new Error("ParseContext:run: no tokens to parse!!!");
         
         while (this.tokens != null && this.tokens.length > 0) {
+            this.idle = false;
+            
             const state = this.peek();
             if (state["type"] != "state")
                 throw new Error(`ParseContext:run: expected state index in stack, found ${state}`);
@@ -186,6 +206,7 @@ class ParseContext {
             }
     
             // yield after each instruction so it's easy to step through
+            this.idle = true;
             yield;
         }
         
@@ -300,10 +321,23 @@ function importJSONTable(json) {
 let table = null;
 let running = false;
 let context = null;
+let history_buffer = [];
+let steps_since_idle = 0;
 
 function initParseTable(ptable) {
     table = ptable;
     displayParseTable(ptable);
+}
+
+function pushHistory() {
+    history_buffer.push(context.getData());
+}
+
+function popHistory() { 
+    if (history_buffer.length > 0) {
+        let hist = history_buffer.pop();
+        context.setData(hist);
+    }
 }
 
 // interface logic
@@ -322,6 +356,9 @@ $("#run-btn").click(function () {
     context = new ParseContext(table, tokens);
     parse_routine = context.run();
 
+    history_buffer = [];
+    steps_since_idle = 0;
+
     $(".idle-controls").addClass("disabled");
     $(".running-controls").removeClass("disabled");
     $(".stack-textbox").val(context.getStack());
@@ -330,9 +367,45 @@ $("#run-btn").click(function () {
 $("#next-btn").click(function () {
     if (!running || parse_routine == null)
         return;
-
+    
+    if (context.idle) {
+        pushHistory();
+        steps_since_idle = 0;
+    }
     parse_routine.next();
+    steps_since_idle++;
 
+    // update stack display
+    $(".stack-textbox").val(context.getStack());
+});
+
+$("#prev-btn").click(function () {
+    if (!running || parse_routine == null)
+        return;
+
+    // ignore if we're already at the first instruction
+    if (history_buffer.length <= 1)
+        return;
+    
+    // if we're halfway through an instruction,
+    // finish it up to bring the context back into the idle state
+    if (!context.idle) {
+        while (!context.idle)
+            parse_routine.next();
+    }
+    
+    // if we're at the first step, do a double pop,
+    // to go back to the previous instruction rather than the start of this one
+    if (steps_since_idle <= 1)
+        popHistory();
+    
+    // pop history back to the previous idle state,
+    // and run to update the interface
+    popHistory();
+    pushHistory();
+    parse_routine.next();
+    steps_since_idle = 1;
+    
     // update stack display
     $(".stack-textbox").val(context.getStack());
 });
