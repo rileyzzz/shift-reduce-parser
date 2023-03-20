@@ -9,7 +9,7 @@ class ParseContext {
         for (const tok of tokens) {
             this.tokens.push({
                 value: tok,
-                highlight: false
+                highlight: 0
             });
         }
 
@@ -91,7 +91,8 @@ class ParseContext {
         if (this.tokens.length == 0)
             throw new Error('ParseContext.shift: No tokens left to shift!');
         
-        this.tokens[0]["highlight"] = true;
+        yield;
+        this.tokens[0]["highlight"] = 2;
         yield;
 
         // grab the next token
@@ -188,7 +189,8 @@ class ParseContext {
             
             // pull the appropriate action for this state
             const nextToken = this.tokens[0]["value"];
-            
+            this.tokens[0]["highlight"] = 1;
+
             let actionElements = this.table.states[stateIndex].actionElements;
             clearHighlight();
             if (nextToken in actionElements) highlightElement(actionElements[nextToken]);
@@ -319,7 +321,7 @@ function updateTokensList() {
 
     let allTokens = [];
     for (const token of context.tokens) {
-        let tokenClass = token["highlight"] ? "token token-highlight" : "token";
+        let tokenClass = token["highlight"] == 2 ? "token token-highlight-yellow" : (token["highlight"] == 1 ? "token token-highlight" : "token");
         let element = $(`<span class="${tokenClass}">${token["value"]}</span>`);
         list.append(element);
         allTokens.push(element);
