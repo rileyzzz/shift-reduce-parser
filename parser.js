@@ -193,6 +193,9 @@ class ParseContext {
 
             let actionElements = this.table.states[stateIndex].actionElements;
             clearHighlight();
+            
+            // yield to show token
+            yield;
             if (nextToken in actionElements) highlightElement(actionElements[nextToken]);
             
             const actions = this.table.states[stateIndex].actions;
@@ -424,7 +427,7 @@ $("#prev-btn").click(function () {
         return;
 
     // ignore if we're already at the first instruction
-    if (history_buffer.length <= 1)
+    if (history_buffer.length == 0)
         return;
     
     // if we're halfway through an instruction,
@@ -436,7 +439,7 @@ $("#prev-btn").click(function () {
     
     // if we're at the first step, do a double pop,
     // to go back to the previous instruction rather than the start of this one
-    if (steps_since_idle <= 1)
+    if (steps_since_idle <= 2)
         popHistory();
     
     // pop history back to the previous idle state,
@@ -444,7 +447,10 @@ $("#prev-btn").click(function () {
     popHistory();
     pushHistory();
     parse_routine.next();
-    steps_since_idle = 1;
+
+    // skip the token highlight too
+    parse_routine.next();
+    steps_since_idle = 2;
     
     // update stack display
     $(".stack-textbox").val(context.getStack());
