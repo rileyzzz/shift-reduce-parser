@@ -500,3 +500,16 @@ $("#stop-btn").click(function () {
     clearHighlight();
 });
 
+
+// AST logic
+$("#ast-expand").click(function() {
+    $("#ast-expand").addClass("disabled");
+    $("#ast-collapse").removeClass("disabled");
+    $(".ast-modal").removeClass("ast-modal-disabled");
+});
+
+$("#ast-collapse").click(function() {
+    $("#ast-collapse").addClass("disabled"); 
+    $("#ast-expand").removeClass("disabled");
+    $(".ast-modal").addClass("ast-modal-disabled");
+});

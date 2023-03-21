@@ -36,35 +36,56 @@
     </div>
 
     <div class="container main-content">
-        <div class="sidebar">
-            <div class="grammar-container mb-3">
-                <h2 class="mb-2">Grammar</h2>
-                <textarea class="input-box mb-2" id="grammar-input" cols="40" rows="5"></textarea>
-                <button type="button" class="btn btn-primary">Generate Table</button>
+        <div class="center-content mb-3">
+            <div class="sidebar">
+                <div class="grammar-container mb-3">
+                    <h2 class="mb-2">Grammar</h2>
+                    <textarea class="input-box mb-2" id="grammar-input" cols="40" rows="5"></textarea>
+                    <button type="button" class="btn btn-primary">Generate Table</button>
+                </div>
+                <div class="input-container">
+                    <h2 class="mb-2">Input</h2>
+                    <textarea class="input-box" id="text-input" cols="40" rows="5">id + id * id$</textarea>
+                </div>
             </div>
-            <div class="input-container">
-                <h2 class="mb-2">Input</h2>
-                <textarea class="input-box" id="text-input" cols="40" rows="5">id + id * id$</textarea>
+            <div class="right-content">
+                <div class="state-content">
+                    <div class="stack-container mb-3 disabled">
+                        <span class="stack-label">Stack:</span>
+                        <!-- <input type="text" class="stack-textbox" value="" readonly="readonly"> -->
+                        <div class="stack-list"></div>
+                    </div>
+                    <div class="tokens-container mb-3 disabled">
+                        <span class="stack-label">Tokens:</span>
+                        <div class="tokens-list"></div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="parser-table table-dark"></table>
+                    <div class="ast-expand-collapse" id="ast-expand">
+                        <span class="ast-text">Show AST</span>
+                        <span class="ast-icon material-icons">expand_more</span>
+                    </div>
+                    <div class="ast-expand-collapse disabled" id="ast-collapse">
+                        <span class="ast-text">Hide AST</span>
+                        <span class="ast-icon material-icons">expand_less</span>
+                    </div>
+                    <div class="ast-modal ast-modal-disabled">
+
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="table-container">
-            <div class="stack-container mb-3 disabled">
-                <span class="stack-label">Stack:</span>
-                <!-- <input type="text" class="stack-textbox" value="" readonly="readonly"> -->
-                <div class="stack-list"></div>
-            </div>
-            <div class="tokens-container mb-3 disabled">
-                <span class="stack-label">Tokens:</span>
-                <div class="tokens-list"></div>
-            </div>
-            <table class="parser-table table-dark"></table>
+        <div class="footer">
+            <textarea class="output-log" cols="40" rows="5" readonly="readonly"></textarea>
         </div>
     </div>
-    <div class="footer"></div>
+
     <script src="./table.js"></script>
     <script src="./tokenizer.js"></script>
     <script src="./parser.js"></script>
     <script src="./demotable.js"></script>
+    <script src="./logger.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
   </body>
 </html>
