@@ -28,9 +28,14 @@ class TransitiveClosure {
 };
 
 // rules should be a list of ProductionRule objects
-function generateTable(rules) {
+function generateTable(rules, all_terminals, all_nonterminals) {
+    let finalRules = [];
+    for (const srcRule of rules)
+        finalRules.push(new ParserRule(srcRule.terms, srcRule.nonterminal));
+    
     // create an augmented rule for our root state
     const augRule = new ProductionRule(rules[0].nonterminal + '\'', rules[0].nonterminal);
+    all_terminals.add("$");
     rules = [...rules];
     rules.unshift(augRule);
     console.log(`input rules: ${rules}`);
@@ -51,16 +56,28 @@ function generateTable(rules) {
     let searchClosure = 0;
     while (searchClosure < closures.length) {
         let closure = closures[searchClosure++];
-        let state = new ParserState();
+        let finalActions = {};
+        let finalGoto = {};
 
         for (const item of closure.items) {
             const rule = rules[item.rule];
             if (item.index >= rule.terms.length) {
-                // this is a final item, signal a reduce
+                // exception for the augmented rule
+                if (item.rule == 0) {
+                    finalActions["$"] = "accept";
+                }
+                else {
+                    // this is a final item, signal a reduce across the board using the rule
+                    for (const key of all_terminals) {
+                        // use the actual index of the rule, not the augmented
+                        // however, rules are 1-indexed, so we don't need to worry about subtracting
+                        finalActions[key] = "R" + item.rule.toString();
+                    }
+                }
             }
             else {
                 // this isn't the final item, find or generate its closure
-
+                
                 // try to find an existing closure that fits this item
                 let foundClosure = -1;
                 for (let j = 0; j < closures.length; j++) {
@@ -90,12 +107,26 @@ function generateTable(rules) {
                     closures.push(newClosure);
                 }
 
+                // create the goto
+                let gotoTerm = rule.terms[item.index];
+                if (all_nonterminals.has(gotoTerm)) {
+                    finalGoto[gotoTerm] = foundClosure;
+                }
+                else {
+                    finalActions[gotoTerm] = "S" + foundClosure.toString();
+                }
+                
                 closure.closures.push(foundClosure);
             }
         }
+
+        let state = new ParserState(finalActions, finalGoto);
+        finalStates.push(state);
     }
-    
+
     console.log(closures);
+
+    return new ParserTable(Array.from(all_terminals), Array.from(all_nonterminals), finalRules, finalStates);
 }
 
 $("#tablegen-btn").click(function () {
@@ -127,5 +158,8 @@ $("#tablegen-btn").click(function () {
 
     console.log(`terminals: ${[...all_terminals].join(',')}`);
     console.log(`nonterminals: ${[...all_nonterminals].join(',')}`);
-    generateTable(rules);
+    let table = generateTable(rules, all_terminals, all_nonterminals);
+    console.log(`table: ${JSON.stringify(table)}`);
+
+    initParseTable(table);
 });
