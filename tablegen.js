@@ -23,12 +23,18 @@ class TransitiveClosure {
     constructor(root) {
         this.root = root;
         this.items = [];
-        this.closures = {};
+        this.closures = [];
     }
 };
 
 // rules should be a list of ProductionRule objects
 function generateTable(rules) {
+    // create an augmented rule for our root state
+    const augRule = new ProductionRule(rules[0].nonterminal + '\'', rules[0].nonterminal);
+    rules = [...rules];
+    rules.unshift(augRule);
+    console.log(`input rules: ${rules}`);
+
     let finalStates = [];
 
     // build the closures
@@ -40,10 +46,11 @@ function generateTable(rules) {
         s0.items.push(item);
     }
     closures.push(s0);
+    console.log(`root closure: ${s0}`);
 
     let searchClosure = 0;
     while (searchClosure < closures.length) {
-        let closure = closures[searchClosure];
+        let closure = closures[searchClosure++];
         let state = new ParserState();
 
         for (const item of closure.items) {
@@ -83,9 +90,42 @@ function generateTable(rules) {
                     closures.push(newClosure);
                 }
 
-                closure.closures[rule.nonterminal] = foundClosure;
+                closure.closures.push(foundClosure);
             }
         }
     }
     
+    console.log(closures);
 }
+
+$("#tablegen-btn").click(function () {
+    // take the input grammar, split it up into tokens, then generate a table for it
+    const text = $("#grammar-input").val().split('\n');
+    
+    let rules = [];
+    let all_terminals = new Set();
+    let all_nonterminals = new Set();
+
+    for (const line of text) {
+        const parts = line.split("->");
+        if (parts.length < 2) {
+            throw new Error('TableGen: Input grammar is malformed!');
+            return;
+        }
+
+        const nonterminal = parts[0].trim();
+        all_nonterminals.add(nonterminal);
+        const tokens = parts[1].trim().split(/\s+/);
+        for (const token of tokens) {
+            let first = token.charAt(0);
+            if (first == first.toLowerCase()) {
+                all_terminals.add(token);
+            }
+        }
+        rules.push(new ProductionRule(nonterminal, tokens));
+    }
+
+    console.log(`terminals: ${[...all_terminals].join(',')}`);
+    console.log(`nonterminals: ${[...all_nonterminals].join(',')}`);
+    generateTable(rules);
+});
