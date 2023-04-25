@@ -15,12 +15,7 @@ function splitTokens(table, text) {
         
         buf += char;
 
-        if (buf == "id"
-            || buf == "+"
-            || buf == "*"
-            || buf == "("
-            || buf == ")"
-            || buf == "$") {
+        if (terminals.includes(buf)) {
             tokens.push(buf);
             buf = "";
         }
