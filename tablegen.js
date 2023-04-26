@@ -84,7 +84,6 @@ function generateTable(rules, all_terminals, all_nonterminals) {
                     }
                     else {
                         // break after the first terminal if we've had empty first sets up until now
-                        console.log(`found terminal for ${rule.nonterminal}: ${rule.terms[termIndex]}`);
                         first[rule.nonterminal].add(rule.terms[termIndex]);
                         break;
                     }
@@ -112,8 +111,48 @@ function generateTable(rules, all_terminals, all_nonterminals) {
     while (!setsEqual(follow, oldFollow)) {
         oldFollow = cloneSet(follow);
         
+        for (const rule of rules) {
+            for (let termIndex = 0; termIndex < rule.terms.length; termIndex++) {
+                // only worry about follow for nonterminals
+                if (!all_nonterminals.has(rule.terms[termIndex]))
+                    continue;
+                
+                if (termIndex == rule.terms.length - 1) {
+                    // following set of the last term is the following set of the parent term
+                    follow[rule.nonterminal].forEach(e => {
+                        follow[rule.terms[termIndex]].add(e);
+                    });
+                }
+                else {
+                    // following set of earlier terms is the first set of the next term
+                    let followTermIndex = termIndex + 1;
+                    do {
+                        if (all_nonterminals.has(rule.terms[followTermIndex])) {
+                            first[rule.terms[followTermIndex]].forEach(e => {
+                                if (e !== '')
+                                    follow[rule.terms[termIndex]].add(e);
+                            });
+                        }
+                        else {
+                            // break after the first terminal if we've had empty first sets up until now
+                            follow[rule.terms[termIndex]].add(rule.terms[followTermIndex]);
+                            break;
+                        }
+                        followTermIndex++;
+                    } while (followTermIndex < rule.terms.length && first[rule.terms[followTermIndex - 1]].has(''));
+                    
+                    // if we reached the end, and we still have an epsilon, add it
+                    if (followTermIndex == rule.terms.length && first[rule.terms[followTermIndex - 1]].has(''))
+                        follow[rule.terms[termIndex]].add('');
+                }
+            }
+        }
     }
 
+    console.log(`Follow sets:`);
+    for (const [key, set] of Object.entries(follow)) {
+        console.log(`\t${key}: {${Array.from(set).join(',')}}`);
+    }
 
     let finalStates = [];
 
