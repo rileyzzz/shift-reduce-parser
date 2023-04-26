@@ -20,8 +20,7 @@ class LRItem {
 };
 
 class TransitiveClosure {
-    constructor(root) {
-        this.root = root;
+    constructor() {
         this.items = [];
         this.closures = [];
     }
@@ -69,6 +68,8 @@ function generateTable(rules, all_terminals, all_nonterminals) {
                 else {
                     // this is a final item, signal a reduce across the board using the rule
                     for (const key of all_terminals) {
+                        if (key in finalActions)
+                            console.error("reduce conflict!");
                         // use the actual index of the rule, not the augmented
                         // however, rules are 1-indexed, so we don't need to worry about subtracting
                         finalActions[key] = "R" + item.rule.toString();
@@ -77,22 +78,25 @@ function generateTable(rules, all_terminals, all_nonterminals) {
             }
             else {
                 // this isn't the final item, find or generate its closure
-                
+                let gotoTerm = rule.terms[item.index];
+                let lookaheadIndex = item.index + 1;
+                let searchItem = new LRItem(item.rule, lookaheadIndex);
+
                 // try to find an existing closure that fits this item
                 let foundClosure = -1;
+
                 for (let j = 0; j < closures.length; j++) {
-                    if (closures[j].root != null && closures[j].root.equals(item)) {
+                    if (closures[j].items.length > 0 && closures[j].items[0].equals(searchItem)) {
                         foundClosure = j;
                         break;
                     }
                 }
-
+                
                 if (foundClosure == -1) {
                     // no preexisting closure found, create a new one
                     foundClosure = closures.length;
-                    let newClosure = new TransitiveClosure(item);
-                    let lookaheadIndex = item.index + 1;
-                    newClosure.items.push(new LRItem(item.rule, lookaheadIndex));
+                    let newClosure = new TransitiveClosure();
+                    newClosure.items.push(searchItem);
                     
                     if (lookaheadIndex < rule.terms.length) {
                         const lookaheadItem = rule.terms[lookaheadIndex];
@@ -108,11 +112,15 @@ function generateTable(rules, all_terminals, all_nonterminals) {
                 }
 
                 // create the goto
-                let gotoTerm = rule.terms[item.index];
+                
                 if (all_nonterminals.has(gotoTerm)) {
+                    if (gotoTerm in finalGoto)
+                        console.error(`goto conflict on closure ${searchClosure} term ${gotoTerm}! existing ${finalGoto[gotoTerm]} -> ${foundClosure}`);
                     finalGoto[gotoTerm] = foundClosure;
                 }
                 else {
+                    if (gotoTerm in finalActions)
+                        console.error(`action conflict on closure ${searchClosure} term ${gotoTerm}! existing ${finalActions[gotoTerm]} -> S${foundClosure}`);
                     finalActions[gotoTerm] = "S" + foundClosure.toString();
                 }
                 

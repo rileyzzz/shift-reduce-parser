@@ -137,7 +137,7 @@ class ParseContext {
                 throw new Error(`ParseContext:reduce: Failed to match '${check["data"]}' for production rule ${(rule + 1)}! (Expected '${matchTokens[i]}')`);
             
             // grab the items off the end of the ast
-            astChildren.push(this.ast.pop());
+            astChildren.unshift(this.ast.pop());
         }
         
         this.ast.push({
@@ -356,7 +356,7 @@ function updateTokensList() {
 }
 
 function updateAST() {
-    if (context.ast == null || context.ast.length == 0)
+    if (context == null || context.ast == null || context.ast.length == 0)
         return;
     drawAST(context.ast);
 }
