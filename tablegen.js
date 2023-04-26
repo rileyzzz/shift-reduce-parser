@@ -21,8 +21,7 @@ class LRItem {
 
 class TransitiveClosure {
     constructor() {
-        this.items = [];
-        this.closures = [];
+        this.kernel = [];
     }
 };
 
@@ -47,6 +46,38 @@ function cloneSet(set) {
         newSet[key] = new Set(innerSet);
     }
     return newSet;
+}
+
+function kernelsEqual(a, b) {
+    if (a == null || b == null)
+        return false;
+
+    if (a.length != b.length)
+        return false;
+
+    for (let i = 0; i < a.length; i++) {
+        if (!a[i].equals(b[i]))
+            return false;
+    }
+
+    return true;
+}
+
+function kernelContainsRule(kernel, rule) {
+    for (let i = 0; i < kernel.length; i++) {
+        if (kernel[i].rule == rule)
+            return true;
+    }
+
+    return false;
+}
+
+function cloneKernel(kernel) {
+    newKernel = [];
+    for (let i = 0; i < kernel.length; i++) {
+        newKernel.push(new LRItem(kernel[i].rule, kernel[i].index));
+    }
+    return newKernel;
 }
 
 // rules should be a list of ProductionRule objects
@@ -159,21 +190,93 @@ function generateTable(rules, all_terminals, all_nonterminals) {
     // build the closures
     let closures = [];
 
-    let s0 = new TransitiveClosure(null);
+    let s0 = new TransitiveClosure();
     for (let i = 0; i < rules.length; i++) {
         let item = new LRItem(i, 0);
-        s0.items.push(item);
+        s0.kernel.push(item);
     }
     closures.push(s0);
     console.log(`root closure: ${s0}`);
 
     let searchClosure = 0;
     while (searchClosure < closures.length) {
+        console.log(`process closure ${searchClosure}`);
         let closure = closures[searchClosure++];
         let finalActions = {};
         let finalGoto = {};
 
-        for (const item of closure.items) {
+        function buildKernel(term) {
+            let closureKernel = [];
+
+            for (const item of closure.kernel) {
+                const rule = rules[item.rule];
+                if (item.index >= rule.terms.length)
+                    continue;
+                let gotoTerm = rule.terms[item.index];
+                if (gotoTerm == term)
+                    closureKernel.push(new LRItem(item.rule, item.index + 1));
+            }
+
+            console.log(`\t built initial closure for term ${term}, length ${closureKernel.length}`);
+            if (closureKernel.length == 0)
+                return -1;
+            
+            // pad out the kernel to include all necessary items
+            let oldKernel = null;
+            while (!kernelsEqual(closureKernel, oldKernel)) {
+                oldKernel = cloneKernel(closureKernel);
+                
+                console.log(`reprocessing kernel`);
+                for (const item of closureKernel) {
+                    const rule = rules[item.rule];
+                    if (item.index >= rule.terms.length)
+                        continue;
+                    let gotoTerm = rule.terms[item.index];
+
+                    for (let ruleIndex = 0; ruleIndex < rules.length; ruleIndex++) {
+                        if (rules[ruleIndex].nonterminal == gotoTerm && !kernelContainsRule(closureKernel, ruleIndex)) {
+                            closureKernel.push(new LRItem(ruleIndex, 0));
+                            console.log(`adding zeroed rule ${ruleIndex} to closure`);
+                        }
+                    }
+                }
+            }
+
+            // try to find an existing closure matching this signature, otherwise create a new one
+            let foundClosure = -1;
+
+            for (let j = 0; j < closures.length; j++) {
+                if (closures[j].kernel.length > 0 && kernelsEqual(closures[j].kernel, closureKernel)) {
+                    foundClosure = j;
+                    break;
+                }
+            }
+
+            // no closure found, make a new one
+            if (foundClosure == -1) {
+                // no preexisting closure found, create a new one
+                foundClosure = closures.length;
+                let newClosure = new TransitiveClosure();
+                newClosure.kernel = closureKernel;
+                closures.push(newClosure);
+            }
+
+            return foundClosure;
+        }
+
+        all_nonterminals.forEach(nonterminal => {
+            let foundClosure = buildKernel(nonterminal);
+            if (foundClosure != -1)
+                finalGoto[nonterminal] = foundClosure;
+        });
+        all_terminals.forEach(terminal => {
+            let foundClosure = buildKernel(terminal);
+            if (foundClosure != -1)
+                finalActions[terminal] = "S" + foundClosure;
+        });
+
+        // handle reductions
+        for (const item of closure.kernel) {
             const rule = rules[item.rule];
             if (item.index >= rule.terms.length) {
                 // exception for the augmented rule
@@ -181,8 +284,8 @@ function generateTable(rules, all_terminals, all_nonterminals) {
                     finalActions["$"] = "accept";
                 }
                 else {
-                    // this is a final item, signal a reduce across the board using the rule
-                    for (const key of all_terminals) {
+                    // this is a final item, signal a reduce for each term that can follow this
+                    for (const key of follow[rule.nonterminal]) {
                         if (key in finalActions)
                             console.error("reduce conflict!");
                         // use the actual index of the rule, not the augmented
@@ -190,56 +293,6 @@ function generateTable(rules, all_terminals, all_nonterminals) {
                         finalActions[key] = "R" + item.rule.toString();
                     }
                 }
-            }
-            else {
-                // this isn't the final item, find or generate its closure
-                let gotoTerm = rule.terms[item.index];
-                let lookaheadIndex = item.index + 1;
-                let searchItem = new LRItem(item.rule, lookaheadIndex);
-
-                // try to find an existing closure that fits this item
-                let foundClosure = -1;
-
-                for (let j = 0; j < closures.length; j++) {
-                    if (closures[j].items.length > 0 && closures[j].items[0].equals(searchItem)) {
-                        foundClosure = j;
-                        break;
-                    }
-                }
-                
-                if (foundClosure == -1) {
-                    // no preexisting closure found, create a new one
-                    foundClosure = closures.length;
-                    let newClosure = new TransitiveClosure();
-                    newClosure.items.push(searchItem);
-                    
-                    if (lookaheadIndex < rule.terms.length) {
-                        const lookaheadItem = rule.terms[lookaheadIndex];
-                        
-                        // create the rest of the items in this closure
-                        for (let i = 0; i < rules.length; i++) {
-                            if (rules[i].nonterminal == lookaheadItem) {
-                                newClosure.items.push(new LRItem(i, 0));
-                            }
-                        }
-                    }
-                    closures.push(newClosure);
-                }
-
-                // create the goto
-                
-                if (all_nonterminals.has(gotoTerm)) {
-                    if (gotoTerm in finalGoto)
-                        console.error(`goto conflict on closure ${searchClosure} term ${gotoTerm}! existing ${finalGoto[gotoTerm]} -> ${foundClosure}`);
-                    finalGoto[gotoTerm] = foundClosure;
-                }
-                else {
-                    if (gotoTerm in finalActions)
-                        console.error(`action conflict on closure ${searchClosure} term ${gotoTerm}! existing ${finalActions[gotoTerm]} -> S${foundClosure}`);
-                    finalActions[gotoTerm] = "S" + foundClosure.toString();
-                }
-                
-                closure.closures.push(foundClosure);
             }
         }
 
