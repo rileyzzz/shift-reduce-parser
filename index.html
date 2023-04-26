@@ -40,9 +40,12 @@
             <div class="sidebar">
                 <div class="grammar-container mb-3">
                     <h2 class="mb-2">Grammar</h2>
-                    <textarea class="input-box mb-2" id="grammar-input" cols="40" rows="5">S -> A A
-A -> a A
-A -> b</textarea>
+                    <textarea class="input-box mb-2" id="grammar-input" cols="40" rows="5">E -> E + T
+E -> T
+T -> T * F
+T -> F
+F -> ( E )
+F -> id</textarea>
                     <button type="button" class="btn btn-primary" id="tablegen-btn">Generate Table</button>
                 </div>
                 <div class="input-container">

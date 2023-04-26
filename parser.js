@@ -420,7 +420,7 @@ $("#run-btn").click(function () {
         return;
     
     let textInput = $("#text-input");
-    textInput.prop('readonly', true);
+    
     let tokens = splitTokens(table, textInput.val());
     console.log(`tokens: ${tokens}`);
 
@@ -439,6 +439,10 @@ $("#run-btn").click(function () {
     updateStackList();
     updateTokensList();
     updateAST();
+
+    // set the text to readonly last, so we don't lock ourselves out if there's an error
+    textInput.prop('readonly', true);
+    textInput.prop('title', 'The parser is currently running!');
 });
 
 $("#next-btn").click(function () {
@@ -505,6 +509,7 @@ $("#stop-btn").click(function () {
 
     let textInput = $("#text-input");
     textInput.prop('readonly', false);
+    textInput.prop('title', '');
 
     $(".running-controls").addClass("disabled");
     $(".idle-controls").removeClass("disabled");

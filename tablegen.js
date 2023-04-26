@@ -200,7 +200,7 @@ function generateTable(rules, all_terminals, all_nonterminals) {
 
     let searchClosure = 0;
     while (searchClosure < closures.length) {
-        console.log(`process closure ${searchClosure}`);
+        // console.log(`process closure ${searchClosure}`);
         let closure = closures[searchClosure++];
         let finalActions = {};
         let finalGoto = {};
@@ -217,7 +217,7 @@ function generateTable(rules, all_terminals, all_nonterminals) {
                     closureKernel.push(new LRItem(item.rule, item.index + 1));
             }
 
-            console.log(`\t built initial closure for term ${term}, length ${closureKernel.length}`);
+            // console.log(`\t built initial closure for term ${term}, length ${closureKernel.length}`);
             if (closureKernel.length == 0)
                 return -1;
             
@@ -226,7 +226,7 @@ function generateTable(rules, all_terminals, all_nonterminals) {
             while (!kernelsEqual(closureKernel, oldKernel)) {
                 oldKernel = cloneKernel(closureKernel);
                 
-                console.log(`reprocessing kernel`);
+                // console.log(`reprocessing kernel`);
                 for (const item of closureKernel) {
                     const rule = rules[item.rule];
                     if (item.index >= rule.terms.length)
@@ -236,7 +236,7 @@ function generateTable(rules, all_terminals, all_nonterminals) {
                     for (let ruleIndex = 0; ruleIndex < rules.length; ruleIndex++) {
                         if (rules[ruleIndex].nonterminal == gotoTerm && !kernelContainsRule(closureKernel, ruleIndex)) {
                             closureKernel.push(new LRItem(ruleIndex, 0));
-                            console.log(`adding zeroed rule ${ruleIndex} to closure`);
+                            // console.log(`adding zeroed rule ${ruleIndex} to closure`);
                         }
                     }
                 }

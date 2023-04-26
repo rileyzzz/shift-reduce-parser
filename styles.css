@@ -87,6 +87,11 @@
     pointer-events: none;
 }
 
+#text-input:read-only {
+    /* font-weight: bold; */
+    color: #3fb955;
+}
+
 .sidebar {
     text-align: left;
     display: flex;
@@ -298,6 +303,10 @@
     flex-shrink: 0;
     font-weight: bold;
 
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
+
     display: flex;
     flex-direction: row;
 }
@@ -311,6 +320,10 @@
     flex-shrink: 0;
     font-weight: bold;
     transform: rotate(90deg);
+
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
 }
 
 .ast-modal {
