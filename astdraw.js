@@ -2,9 +2,9 @@
 const nodeWidth = 100;
 const nodeSpacing = 20;
 const nodeHeight = 50;
-const linkHeight = 20;
+const linkHeight = 30;
 const textSize = 24;
-const canvasMargin = 16;
+const canvasMargin = 32;
 // draw a node, returns the width and height
 function setNodeSize(node) {
     let width = 0;
@@ -38,14 +38,34 @@ function setNodeSize(node) {
 
 let scaleFactor = 1.0;
 
+function drawCurve(ctx, startX, startY, endX, endY, sideDilation) {
+    const numSegments = 8;
+
+    ctx.beginPath();
+    ctx.lineWidth = 1.0;
+
+    ctx.moveTo(startX, startY);
+    for (let i = 1; i <= numSegments; i++) {
+        const along = i / numSegments;
+        let posX = startX + (endX - startX) * Math.pow(along, 1 / sideDilation);
+        let posY = startY + (endY - startY) * along;
+        ctx.lineTo(posX, posY);
+        ctx.moveTo(posX, posY);
+    }
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.stroke();
+}
+
 function drawNode(ctx, node, posX, posY) {
     // console.log(`draw ${node.name} at ${posX}, ${posY}`);
 
     ctx.fillText(node.name, posX, posY + (textSize * scaleFactor / 2.0) + (nodeHeight * scaleFactor / 2.0));
 
     ctx.beginPath();
-    ctx.rect(posX - (nodeWidth * scaleFactor / 2.0), posY,
-        nodeWidth * scaleFactor, nodeHeight * scaleFactor);
+    // ctx.rect(posX - (nodeWidth * scaleFactor / 2.0), posY, nodeWidth * scaleFactor, nodeHeight * scaleFactor);
+    ctx.lineWidth = 2.0;
+    ctx.roundRect(posX - (nodeWidth * scaleFactor / 2.0), posY, nodeWidth * scaleFactor, nodeHeight * scaleFactor, 4);
     
     ctx.strokeStyle = '#ffffff';
     ctx.stroke();
@@ -67,11 +87,14 @@ function drawNode(ctx, node, posX, posY) {
             let yoffset = posY + linkHeight * scaleFactor;
             drawNode(ctx, child, xoffset, yoffset);
 
-            ctx.beginPath();
-            ctx.moveTo(posX, posY);
-            ctx.lineTo(xoffset, yoffset);
-            ctx.strokeStyle = '#ffffff';
-            ctx.stroke();
+            // ctx.beginPath();
+            // ctx.lineWidth = 1.0;
+            // ctx.moveTo(posX, posY);
+            // ctx.lineTo(xoffset, yoffset);
+            // ctx.strokeStyle = '#ffffff';
+            // ctx.stroke();
+            let dilate = 1 + Math.abs(xoffset - posX) / (300.0 * scaleFactor);
+            drawCurve(ctx, posX, posY, xoffset, yoffset, dilate);
 
             xoffset += child.width / 2.0 * scaleFactor;
             if (child != 0)
@@ -115,8 +138,8 @@ function drawAST(inAst) {
 
     scaleFactor = Math.min(canvas.width / width, canvas.height / height);
 
-    if (scaleFactor > 1)
-        scaleFactor = 1;
+    if (scaleFactor > 1.5)
+        scaleFactor = 1.5;
     
     ctx.font = (textSize * scaleFactor).toString() + "px serif";
 

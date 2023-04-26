@@ -48,7 +48,7 @@
     display: flex;
     overflow: hidden;
     flex-direction: row;
-    margin-right: 8px;
+    /* margin-right: 8px; */
     border: 1px solid #787878;
     border-radius: 2px;
     background-color: #0f0f0f;

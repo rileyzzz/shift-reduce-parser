@@ -390,6 +390,35 @@ function importJSONTable(json) {
 }
 
 
+
+function exportJSONTable(table, name) {
+    let json = {
+        name: name,
+        terminals: table.terminals,
+        nonterminals: table.nonterminals,
+        rules: [],
+        states: []
+    };
+
+    for (let ruleIndex = 0; ruleIndex < table.rules.length; ruleIndex++) {
+        const rule = table.rules[ruleIndex];
+        json.rules.push({
+            match: rule.matches,
+            result: rule.result
+        });
+    }
+
+    for (let stateIndex = 0; stateIndex < table.states.length; stateIndex++) {
+        const state = table.states[stateIndex];
+        json.states.push({
+            actions: state.actions,
+            goto: state.goto
+        });
+    }
+
+    return JSON.stringify(json);
+}
+
 let table = null;
 let running = false;
 let context = null;
@@ -519,6 +548,46 @@ $("#stop-btn").click(function () {
     clearHighlight();
 });
 
+// import-export
+$("#import-btn").click(function () {
+    if (running)
+        return;
+
+    $("#import-file").click();
+});
+
+$("#import-file").change(function () {
+    let files = $("#import-file")[0].files;
+    // console.log(`imported ${files.length} files`);
+    if (files.length == 0)
+        return;
+
+    var fr = new FileReader();
+
+    fr.onload = function(e) { 
+        console.log(e);
+        var result = JSON.parse(e.target.result);
+        let table = importJSONTable(result);
+        initParseTable(table);
+        $(".name-text").val(result["name"]);
+        console.log(`Loaded '${result["name"]}'`);
+    };
+    
+    fr.readAsText(files.item(0));
+});
+
+$("#export-btn").click(function () {
+    if (running || table == null)
+        return;
+
+    let nameVal = $(".name-text").val();
+
+    var downloadAnchor = document.getElementById('download-anchor');
+    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(exportJSONTable(table, nameVal));
+    downloadAnchor.href = dataStr;
+    downloadAnchor.download = `${nameVal}.json`;
+    downloadAnchor.click();
+});
 
 // AST logic
 $("#ast-expand").click(function() {
