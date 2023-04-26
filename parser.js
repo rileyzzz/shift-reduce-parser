@@ -421,6 +421,7 @@ function exportJSONTable(table, name) {
 
 let table = null;
 let running = false;
+let error = false;
 let context = null;
 let history_buffer = [];
 let steps_since_idle = 0;
@@ -454,6 +455,7 @@ $("#run-btn").click(function () {
     console.log(`tokens: ${tokens}`);
 
     running = true;
+    error = false;
     context = new ParseContext(table, tokens);
     parse_routine = context.run();
 
@@ -475,25 +477,31 @@ $("#run-btn").click(function () {
 });
 
 $("#next-btn").click(function () {
-    if (!running || parse_routine == null || context.finished)
+    if (!running || error || parse_routine == null || context.finished)
         return;
+    try {
+        if (context.idle) {
+            pushHistory();
+            steps_since_idle = 0;
+        }
+        parse_routine.next();
+        steps_since_idle++;
     
-    if (context.idle) {
-        pushHistory();
-        steps_since_idle = 0;
+        // update stack display
+        $(".stack-textbox").val(context.getStack());
+        updateStackList();
+        updateTokensList();
+        updateAST();
     }
-    parse_routine.next();
-    steps_since_idle++;
-
-    // update stack display
-    $(".stack-textbox").val(context.getStack());
-    updateStackList();
-    updateTokensList();
-    updateAST();
+    catch (e) {
+        error = true;
+        // pass up to the window
+        logParseError(e);
+    }
 });
 
 $("#prev-btn").click(function () {
-    if (!running || parse_routine == null)
+    if (!running || error || parse_routine == null)
         return;
 
     // ignore if we're already at the first instruction
@@ -533,6 +541,7 @@ $("#stop-btn").click(function () {
     if (!running)
         return;
     running = false;
+    error = false;
     parse_routine = null;
     context = null;
 
@@ -540,6 +549,8 @@ $("#stop-btn").click(function () {
     textInput.prop('readonly', false);
     textInput.prop('title', '');
 
+    $(".output-log")[0].textContent = "";
+    
     $(".running-controls").addClass("disabled");
     $(".idle-controls").removeClass("disabled");
     $(".stack-container").addClass("disabled");

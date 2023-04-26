@@ -1,11 +1,16 @@
 const output = $(".output-log")[0];
+
+function logParseError(msg) {
+    output.textContent += `${msg}\n`;
+}
+
 function print(msg) {
     output.textContent += msg + '\n';
 }
 
 window.onerror = function(message, source, lineno, colno, error) {
     // print(message + " line: " + lineno + " col: " + colno + " src: " + source);
-    print(`Parse error: ${message}`);
+    logParseError(message);
 };
 
 // var _log = console.log,
