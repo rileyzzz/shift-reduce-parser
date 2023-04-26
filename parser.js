@@ -215,10 +215,10 @@ class ParseContext {
                 doneHighlight();
     
                 // bundle up the AST
-                this.ast = [{
-                    "name": "",
-                    "children": this.ast
-                }];
+                // this.ast = [{
+                //     "name": "",
+                //     "children": this.ast
+                // }];
                 // break;
                 // yield, so we can still step back through with the previous button
                 this.finished = true;
@@ -355,6 +355,17 @@ function updateTokensList() {
     context.tokenElements = allTokens;
 }
 
+function updateAST() {
+    if (context.ast == null || context.ast.length == 0)
+        return;
+    drawAST(context.ast);
+}
+
+$( window ).on( "resize", function() {
+    updateAST();
+} );
+
+
 function importJSONTable(json) {
     const terminals = json["terminals"];
     const nonterminals = json["nonterminals"];
@@ -427,6 +438,7 @@ $("#run-btn").click(function () {
     $(".stack-textbox").val(context.getStack());
     updateStackList();
     updateTokensList();
+    updateAST();
 });
 
 $("#next-btn").click(function () {
@@ -444,6 +456,7 @@ $("#next-btn").click(function () {
     $(".stack-textbox").val(context.getStack());
     updateStackList();
     updateTokensList();
+    updateAST();
 });
 
 $("#prev-btn").click(function () {
@@ -480,6 +493,7 @@ $("#prev-btn").click(function () {
     $(".stack-textbox").val(context.getStack());
     updateStackList();
     updateTokensList();
+    updateAST();
 });
 
 $("#stop-btn").click(function () {

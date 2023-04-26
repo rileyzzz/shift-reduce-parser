@@ -324,12 +324,20 @@
     transition: left 0.5s;
 
     border: 1px solid #787878;
+
+    display: table-cell;
+    /* padding: 16px; */
 }
 
 .ast-modal-disabled {
     left: 100%;
 }
 
+.ast-modal-canvas {
+    /* position: relative; */
+    width: 100%;
+    height: 100%;
+}
 
 .footer {
     width: 100%;
