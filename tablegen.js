@@ -91,8 +91,7 @@ function generateTable(rules, all_terminals, all_nonterminals) {
     all_terminals.add("$");
     rules = [...rules];
     rules.unshift(augRule);
-    console.log(`input rules: ${rules}`);
-
+    
     // determine the first and follow sets for each nonterminal
     let first = {};
     let oldFirst = null;
@@ -196,7 +195,7 @@ function generateTable(rules, all_terminals, all_nonterminals) {
         s0.kernel.push(item);
     }
     closures.push(s0);
-    console.log(`root closure: ${s0}`);
+    // console.log(`root closure: ${s0}`);
 
     let searchClosure = 0;
     while (searchClosure < closures.length) {
@@ -338,7 +337,7 @@ $("#tablegen-btn").click(function () {
     console.log(`terminals: ${[...all_terminals].join(',')}`);
     console.log(`nonterminals: ${[...all_nonterminals].join(',')}`);
     let table = generateTable(rules, all_terminals, all_nonterminals);
-    console.log(`table: ${JSON.stringify(table)}`);
+    // console.log(`table: ${JSON.stringify(table)}`);
 
     initParseTable(table);
 });
