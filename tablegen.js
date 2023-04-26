@@ -26,6 +26,29 @@ class TransitiveClosure {
     }
 };
 
+function setsEqual(a, b) {
+    if (a == null || b == null)
+        return false;
+
+    for (const [key, set] of Object.entries(a)) {
+        // assume both sets have the same keys, and keys cannot be replaced
+        if (!(key in b))
+            return false;
+        
+        if (set.size != b[key].size)
+            return false;
+    }
+    return true;
+}
+
+function cloneSet(set) {
+    let newSet = {};
+    for (const [key, innerSet] of Object.entries(set)) {
+        newSet[key] = new Set(innerSet);
+    }
+    return newSet;
+}
+
 // rules should be a list of ProductionRule objects
 function generateTable(rules, all_terminals, all_nonterminals) {
     let finalRules = [];
@@ -38,6 +61,59 @@ function generateTable(rules, all_terminals, all_nonterminals) {
     rules = [...rules];
     rules.unshift(augRule);
     console.log(`input rules: ${rules}`);
+
+    // determine the first and follow sets for each nonterminal
+    let first = {};
+    let oldFirst = null;
+    for (const rule of rules) {
+        first[rule.nonterminal] = new Set();
+    }
+    while (!setsEqual(first, oldFirst)) {
+        oldFirst = cloneSet(first);
+
+        for (const rule of rules) {
+            if (rule.terms.length != 0) {
+                // cascade across any terms that have epsilon
+                let termIndex = 0;
+                do {
+                    if (all_nonterminals.has(rule.terms[termIndex])) {
+                        first[rule.terms[termIndex]].forEach(e => {
+                            if (e !== '')
+                                first[rule.nonterminal].add(e);
+                        });
+                    }
+                    else {
+                        // break after the first terminal if we've had empty first sets up until now
+                        console.log(`found terminal for ${rule.nonterminal}: ${rule.terms[termIndex]}`);
+                        first[rule.nonterminal].add(rule.terms[termIndex]);
+                        break;
+                    }
+                    termIndex++;
+                } while (termIndex < rule.terms.length && first[rule.terms[termIndex - 1]].has(''));
+            }
+            else {
+                // this rule contains epsilon
+                first[rule.nonterminal].add('');
+            }
+        }
+    }
+
+    console.log(`First sets:`);
+    for (const [key, set] of Object.entries(first)) {
+        console.log(`\t${key}: {${Array.from(set).join(',')}}`);
+    }
+
+    let follow = {};
+    let oldFollow = null;
+    for (const rule of rules) {
+        follow[rule.nonterminal] = new Set();
+    }
+    follow[augRule.nonterminal].add("$");
+    while (!setsEqual(follow, oldFollow)) {
+        oldFollow = cloneSet(follow);
+        
+    }
+
 
     let finalStates = [];
 
