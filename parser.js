@@ -462,6 +462,7 @@ $("#run-btn").click(function () {
     history_buffer = [];
     steps_since_idle = 0;
 
+    $("#tablegen-btn").prop("disabled", true);
     $(".idle-controls").addClass("disabled");
     $(".running-controls").removeClass("disabled");
     $(".stack-container").removeClass("disabled");
@@ -550,11 +551,12 @@ $("#stop-btn").click(function () {
     textInput.prop('title', '');
 
     $(".output-log")[0].textContent = "";
-    
+
     $(".running-controls").addClass("disabled");
     $(".idle-controls").removeClass("disabled");
     $(".stack-container").addClass("disabled");
     $(".tokens-container").addClass("disabled");
+    $("#tablegen-btn").prop("disabled", false);
     $(".stack-textbox").val("");
     clearHighlight();
 });
