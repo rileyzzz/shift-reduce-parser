@@ -150,7 +150,7 @@
 
 .token {
     font-weight: bold;
-    margin-left: 1rem;
+    margin-left: 0.5rem;
     font-size: 22px;
 
     outline: 1px solid #787878;
@@ -181,7 +181,7 @@
 
 .stack-item {
     font-weight: bold;
-    margin-left: 1rem;
+    margin-left: 0.5rem;
     font-size: 22px;
 
     outline: 1px solid #787878;
