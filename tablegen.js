@@ -63,9 +63,9 @@ function kernelsEqual(a, b) {
     return true;
 }
 
-function kernelContainsRule(kernel, rule) {
+function kernelContainsRule(kernel, rule, index) {
     for (let i = 0; i < kernel.length; i++) {
-        if (kernel[i].rule == rule)
+        if (kernel[i].rule == rule && kernel[i].index == index)
             return true;
     }
 
@@ -234,7 +234,10 @@ function generateTable(rules, all_terminals, all_nonterminals) {
                     let gotoTerm = rule.terms[item.index];
 
                     for (let ruleIndex = 0; ruleIndex < rules.length; ruleIndex++) {
-                        if (rules[ruleIndex].nonterminal == gotoTerm && !kernelContainsRule(closureKernel, ruleIndex)) {
+                        // not 100% sure why we can have multiple items for the same rule in the closure, but it matches the behavior here
+                        // https://jsmachines.sourceforge.net/machines/slr.html
+                        // so we only check for a rule at item 0
+                        if (rules[ruleIndex].nonterminal == gotoTerm && !kernelContainsRule(closureKernel, ruleIndex, 0)) {
                             closureKernel.push(new LRItem(ruleIndex, 0));
                             // console.log(`adding zeroed rule ${ruleIndex} to closure`);
                         }
