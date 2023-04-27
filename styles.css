@@ -106,6 +106,42 @@
     flex-direction: column;
 }
 
+.grammar-edit-controls {
+    display: flex;
+    flex-direction: column;
+}
+
+.grammar-rule-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.rule-container {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 0.5rem;
+}
+
+.rule-index {
+    flex-grow: 0;
+    flex-shrink: 0;
+    margin-top: 3px;
+    margin-right: 6px;
+}
+
+.prod-rule {
+    height: 100%;
+    flex-direction: row;
+    /* font-weight: bold; */
+    outline: 1px solid rgb(216, 216, 216);
+    padding: 2px;
+    border-radius: 2px;
+
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
 .input-box {
     background-color: #2b2b2b;
     border: 1px solid #787878;

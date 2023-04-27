@@ -13,6 +13,14 @@ class ParseContext {
             });
         }
 
+        this.rules = [];
+        for (const rule of table.rules) {
+            this.rules.push({
+                data: rule,
+                highlight: 0
+            });
+        }
+
         this.stack = [];
         // always start with state 0
         this.pushState(0);
@@ -30,6 +38,7 @@ class ParseContext {
             table: this.table,
             // deep copy the tokens
             tokens: JSON.parse(JSON.stringify(this.tokens.slice())),
+            rules: JSON.parse(JSON.stringify(this.rules.slice())),
             stack: this.stack.slice(),
             // deep copy the AST
             ast: JSON.parse(JSON.stringify(this.ast)),
@@ -40,6 +49,7 @@ class ParseContext {
     setData(data) {
         this.table = data["table"];
         this.tokens = data["tokens"];
+        this.rules = data["rules"];
         this.stack = data["stack"];
         this.ast = data["ast"];
         this.finished = data["finished"];
@@ -117,9 +127,11 @@ class ParseContext {
         if (rule < 0 || rule >= this.table.rules.length)
             throw new Error(`ParseContext:reduce: Invalid rule index ${(rule + 1)}!`);
 
-        // highlight the production rule
         yield;
-
+        // highlight the production rule
+        this.rules[rule]["highlight"] = 1;
+        yield;
+        
         // reduce using production rule "rule"
         const matchRule = this.table.rules[rule];
         const matchTokens = matchRule.matches;
@@ -147,6 +159,7 @@ class ParseContext {
 
         // if we got through the loop without errors, we successfully matched
         yield;
+        this.rules[rule]["highlight"] = 0;
         
         // get ready for my triple rhyme...
         // reduce part 2, electric boogaloo: resolve the appropriate goto
@@ -361,6 +374,24 @@ function updateAST() {
     drawAST(context.ast);
 }
 
+function updateGrammarList() {
+    let ruleList = $(".grammar-rule-list");
+    ruleList.empty();
+
+    let allRules = [];
+    // for (const rule of context.rules) {
+    for (let i = 0; i < context.rules.length; i++) {
+        const rule = context.rules[i];
+        const data = rule.data;
+        let ruleClass = rule["highlight"] == 2 ? "prod-rule token-highlight-yellow" : (rule["highlight"] == 1 ? "prod-rule token-highlight" : "prod-rule");
+        let element = $(`<span class=rule-container><span class=rule-index>${i + 1}.</span><span class="${ruleClass}"> ${data.result} \u2192 ${data.matches.join(' ')}</span></span>`);
+        ruleList.append(element);
+        allRules.push(element);
+    }
+
+    context.ruleElements = allRules;
+}
+
 $( window ).on( "resize", function() {
     updateAST();
 } );
@@ -464,12 +495,15 @@ $("#run-btn").click(function () {
 
     $("#tablegen-btn").prop("disabled", true);
     $(".idle-controls").addClass("disabled");
+    $(".grammar-edit-controls").addClass("disabled");
     $(".running-controls").removeClass("disabled");
     $(".stack-container").removeClass("disabled");
     $(".tokens-container").removeClass("disabled");
+    $(".grammar-rule-list").removeClass("disabled");
     $(".stack-textbox").val(context.getStack());
     updateStackList();
     updateTokensList();
+    updateGrammarList();
     updateAST();
 
     // set the text to readonly last, so we don't lock ourselves out if there's an error
@@ -492,6 +526,7 @@ $("#next-btn").click(function () {
         $(".stack-textbox").val(context.getStack());
         updateStackList();
         updateTokensList();
+        updateGrammarList();
         updateAST();
     }
     catch (e) {
@@ -535,6 +570,7 @@ $("#prev-btn").click(function () {
     $(".stack-textbox").val(context.getStack());
     updateStackList();
     updateTokensList();
+    updateGrammarList();
     updateAST();
 });
 
@@ -554,8 +590,10 @@ $("#stop-btn").click(function () {
 
     $(".running-controls").addClass("disabled");
     $(".idle-controls").removeClass("disabled");
+    $(".grammar-edit-controls").removeClass("disabled");
     $(".stack-container").addClass("disabled");
     $(".tokens-container").addClass("disabled");
+    $(".grammar-rule-list").addClass("disabled");
     $("#tablegen-btn").prop("disabled", false);
     $(".stack-textbox").val("");
     clearHighlight();
