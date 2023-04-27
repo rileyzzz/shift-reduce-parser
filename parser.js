@@ -131,7 +131,7 @@ class ParseContext {
         // highlight the production rule
         this.rules[rule]["highlight"] = 1;
         yield;
-        
+
         // reduce using production rule "rule"
         const matchRule = this.table.rules[rule];
         const matchTokens = matchRule.matches;
@@ -159,7 +159,6 @@ class ParseContext {
 
         // if we got through the loop without errors, we successfully matched
         yield;
-        this.rules[rule]["highlight"] = 0;
         
         // get ready for my triple rhyme...
         // reduce part 2, electric boogaloo: resolve the appropriate goto
@@ -325,6 +324,9 @@ function clearHighlight() {
     $(".table-complete").removeClass("table-complete");
     $(".parser-highlight").removeClass("parser-highlight");
     $(".parser-highlight-invalid").removeClass("parser-highlight-invalid");
+
+    for (let rule of context.rules)
+        rule["highlight"] = 0;
 }
 
 function highlightElement(element) {
@@ -383,7 +385,7 @@ function updateGrammarList() {
     for (let i = 0; i < context.rules.length; i++) {
         const rule = context.rules[i];
         const data = rule.data;
-        let ruleClass = rule["highlight"] == 2 ? "prod-rule token-highlight-yellow" : (rule["highlight"] == 1 ? "prod-rule token-highlight" : "prod-rule");
+        let ruleClass = rule["highlight"] == 2 ? "prod-rule parser-highlight-invalid" : (rule["highlight"] == 1 ? "prod-rule parser-highlight" : "prod-rule");
         let element = $(`<span class=rule-container><span class=rule-index>${i + 1}.</span><span class="${ruleClass}"> ${data.result} \u2192 ${data.matches.join(' ')}</span></span>`);
         ruleList.append(element);
         allRules.push(element);
