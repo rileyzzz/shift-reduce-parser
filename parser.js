@@ -325,8 +325,10 @@ function clearHighlight() {
     $(".parser-highlight").removeClass("parser-highlight");
     $(".parser-highlight-invalid").removeClass("parser-highlight-invalid");
 
-    for (let rule of context.rules)
-        rule["highlight"] = 0;
+    if (context != null) {
+        for (let rule of context.rules)
+            rule["highlight"] = 0;
+    }
 }
 
 function highlightElement(element) {
